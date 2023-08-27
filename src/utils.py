@@ -315,3 +315,18 @@ def object_to_dict(_object):
     json_dict = json.loads(json.dumps(_object, default=lambda o: o.__dict__))
     # remove hidden fields
     return {k: v for k, v in json_dict.items() if not k.startswith('__')}
+
+
+def set_user_agent(driver, user_agent):
+    try:
+        if driver is None:
+            raise Exception("Driver is None")
+
+        driver.execute_cdp_cmd('Network.setUserAgentOverride', {
+            "userAgent": 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36 Edg/115.0.1901.200'})
+        logging.info(f"User agent: {user_agent}")
+        # driver.execute_cdp_cmd('Network.setUserAgentOverride', {"userAgent": user_agent})
+        ua = driver.execute_script("return navigator.userAgent")
+        return ua
+    except Exception as e:
+        raise Exception("Error getting browser User-Agent. " + str(e))

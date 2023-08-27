@@ -20,6 +20,8 @@ from dtos import (STATUS_ERROR, STATUS_OK, ChallengeResolutionResultT,
                   V1RequestBase, V1ResponseBase)
 from sessions import SessionsStorage
 
+import custom
+
 ACCESS_DENIED_TITLES = [
     # Cloudflare
     'Access denied',
@@ -238,6 +240,11 @@ def _resolve_challenge(req: V1RequestBase, method: str) -> ChallengeResolutionT:
         else:
             driver = utils.get_webdriver(req.proxy)
             logging.debug('New instance of webdriver has been created to perform the request')
+
+        # if the request url is "https://www.bing.com/search?q=Bing+AI&showconv=1&FORM=hpcodx", call resolve_bingchat
+        if req.url.startswith('https://www.bing.com/search?q=Bing+AI&showconv=1&FORM=hpcodx'):
+            return custom.resolve_bingchat(req, driver)
+
         return func_timeout(timeout, _evil_logic, (req, driver, method))
     except FunctionTimedOut:
         raise Exception(f'Error solving the challenge. Timeout after {timeout} seconds.')
