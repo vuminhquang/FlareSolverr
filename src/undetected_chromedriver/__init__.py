@@ -17,11 +17,12 @@ by UltrafunkAmsterdam (https://github.com/ultrafunkamsterdam)
 from __future__ import annotations
 
 
-__version__ = "3.5.0"
+__version__ = "3.5.3"
 
 import json
 import logging
 import os
+import pathlib
 import re
 import shutil
 import subprocess
@@ -120,10 +121,9 @@ class Chrome(selenium.webdriver.chrome.webdriver.WebDriver):
         version_main=None,
         patcher_force_close=False,
         suppress_welcome=True,
-        use_subprocess=False,
+        use_subprocess=True,
         debug=False,
         no_sandbox=True,
-        windows_headless=False,
         user_multi_procs: bool = False,
         **kw,
     ):
@@ -373,6 +373,18 @@ class Chrome(selenium.webdriver.chrome.webdriver.WebDriver):
                 browser_executable_path or find_chrome_executable()
             )
 
+        if not options.binary_location or not \
+                pathlib.Path(options.binary_location).exists():
+                raise FileNotFoundError(
+                    "\n---------------------\n"
+                    "Could not determine browser executable."
+                    "\n---------------------\n"
+                    "Make sure your browser is installed in the default location (path).\n"
+                    "If you are sure about the browser executable, you can specify it using\n"
+                    "the `browser_executable_path='{}` parameter.\n\n"
+                    .format("/path/to/browser/executable" if IS_POSIX else "c:/path/to/your/browser.exe")
+                )
+
         self._delay = 3
 
         self.user_data_dir = user_data_dir
@@ -386,10 +398,9 @@ class Chrome(selenium.webdriver.chrome.webdriver.WebDriver):
         if headless or options.headless:
             #workaround until a better checking is found
             try:
-                v_main = int(self.patcher.version_main) if self.patcher.version_main else 108
-                if v_main < 108:
+                if self.patcher.version_main < 108:
                     options.add_argument("--headless=chrome")
-                elif v_main >= 108:
+                elif self.patcher.version_main >= 108:
                     options.add_argument("--headless=new")
             except:
                 logger.warning("could not detect version_main."
@@ -433,29 +444,25 @@ class Chrome(selenium.webdriver.chrome.webdriver.WebDriver):
         if not desired_capabilities:
             desired_capabilities = options.to_capabilities()
 
-        if not use_subprocess and not windows_headless:
+        if not use_subprocess:
             self.browser_pid = start_detached(
                 options.binary_location, *options.arguments
             )
         else:
-            startupinfo = subprocess.STARTUPINFO()
-            if os.name == 'nt' and windows_headless:
-                startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
             browser = subprocess.Popen(
                 [options.binary_location, *options.arguments],
                 stdin=subprocess.PIPE,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 close_fds=IS_POSIX,
-                startupinfo=startupinfo
             )
             self.browser_pid = browser.pid
 
-        # Fix for Chrome 115
-        # https://github.com/seleniumbase/SeleniumBase/pull/1967
+
         service = selenium.webdriver.chromium.service.ChromiumService(
             executable_path=self.patcher.executable_path,
             service_args=["--disable-build-check"]
+
         )
 
         super(Chrome, self).__init__(
@@ -759,7 +766,6 @@ class Chrome(selenium.webdriver.chrome.webdriver.WebDriver):
     def quit(self):
         try:
             self.service.process.kill()
-            self.service.process.wait(5)
             logger.debug("webdriver process ended")
         except (AttributeError, RuntimeError, OSError):
             pass
@@ -773,15 +779,6 @@ class Chrome(selenium.webdriver.chrome.webdriver.WebDriver):
             logger.debug("gracefully closed browser")
         except Exception as e:  # noqa
             pass
-        # Force kill Chrome process in Windows
-        # https://github.com/FlareSolverr/FlareSolverr/issues/772
-        if os.name == 'nt':
-            try:
-                subprocess.call(['taskkill', '/f', '/pid', str(self.browser_pid)],
-                                stdout=subprocess.DEVNULL,
-                                stderr=subprocess.DEVNULL)
-            except Exception:
-                pass
         if (
             hasattr(self, "keep_user_data_dir")
             and hasattr(self, "user_data_dir")
@@ -895,8 +892,6 @@ def find_chrome_executable():
             if item is not None:
                 for subitem in (
                     "Google/Chrome/Application",
-                    "Google/Chrome Beta/Application",
-                    "Google/Chrome Canary/Application",
                 ):
                     candidates.add(os.sep.join((item, subitem, "chrome.exe")))
     for candidate in candidates:
