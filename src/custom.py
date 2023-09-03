@@ -52,6 +52,10 @@ def resolve_bingchat(req: V1RequestBase, driver: WebDriver) -> ChallengeResoluti
     """
     conversation_id = driver.execute_script(script)
 
+    # Get request parameters, if there is parameter 'solvCaptcha' then start the captcha solving process
+    if 'solvCaptcha' in req.url:
+        bypass_turnstile(driver)
+
     challenge_res = ChallengeResolutionResultT({})
     challenge_res.url = driver.current_url
     challenge_res.status = 200  # todo: fix, selenium not provides this info
@@ -64,3 +68,26 @@ def resolve_bingchat(req: V1RequestBase, driver: WebDriver) -> ChallengeResoluti
 
     res.result = challenge_res
     return res
+
+
+# By pass the cloudflare turnstile in bing.com
+def bypass_turnstile(driver: WebDriver):
+    # Log that we are bypassing the turnstile
+    logging.info('Bypassing the turnstile...')
+
+    # Execute the JavaScript code snippet to monitor the cib-message element for the desired content attribute
+    js_code = """
+    const observer = new MutationObserver((mutationsList) => {
+      const hasCaptchaContent = mutationsList.some((mutation) => {
+        const { target } = mutation;
+        return target.getAttribute('content') === 'captcha';
+      });
+
+      if (hasCaptchaContent) {
+        alert('Captcha content appeared!');
+      }
+    });
+
+    observer.observe(document.body, { childList: true, subtree: true });
+    """
+    driver.execute_script(js_code)
