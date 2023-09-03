@@ -309,7 +309,7 @@ class Patcher(object):
             zf.extractall(self.zip_path)
         os.rename(os.path.join(self.zip_path, exe_path), self.executable_path)
         os.remove(fp)
-        shutil.rmtree(self.zip_path)
+        shutil.rmtree
         os.chmod(self.executable_path, 0o755)
         return self.executable_path
 
