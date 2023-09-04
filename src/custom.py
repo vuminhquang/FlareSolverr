@@ -188,19 +188,27 @@ waitForShadowRoot();
 
 def click_verify(driver: WebDriver):
     try:
-        logging.debug("Try to find the Cloudflare verify checkbox...")
+        logging.info("Try to find the Cloudflare verify checkbox...")
+        WebDriverWait(driver, 10 * 60).until(
+            presence_of_element_located((By.XPATH, '//*[@id="cib-chat-main"]/cib-chat-turn//cib-message-group[2]//cib-message//iframe'))
+        )
         iframe = driver.find_element(By.XPATH, "//iframe[@class='captcha-frame']")
         # check if the iframe is not present
         if iframe is None:
-            logging.debug("Cloudflare verify iframe not found on the page.")
+            logging.info("Cloudflare verify iframe not found on the page.")
             return
         driver.switch_to.frame(iframe)
         iframe = driver.find_element(By.XPATH, "//iframe[@title='Widget containing a Cloudflare security challenge']")
         # check if the iframe is not present
         if iframe is None:
-            logging.debug("Cloudflare verify iframe Widget not found on the page.")
+            logging.info("Cloudflare verify iframe Widget not found on the page.")
             return
         driver.switch_to.frame(iframe)
+        # wait for the checkbox to appear
+        logging.info("Wait for the Cloudflare verify checkbox to appear...")
+        WebDriverWait(driver, 10*60).until(
+            presence_of_element_located((By.XPATH, '//*[@id="challenge-stage"]/div/label/map/img'))
+        )
         checkbox = driver.find_element(
             by=By.XPATH,
             value='//*[@id="challenge-stage"]/div/label/map/img',
@@ -210,14 +218,14 @@ def click_verify(driver: WebDriver):
             actions.move_to_element_with_offset(checkbox, 5, 7)
             actions.click(checkbox)
             actions.perform()
-            logging.debug("Cloudflare verify checkbox found and clicked!")
+            logging.info("Cloudflare verify checkbox found and clicked!")
     except Exception:
-        logging.debug("Cloudflare verify checkbox not found on the page.")
+        logging.info("Cloudflare verify checkbox not found on the page.")
     finally:
         driver.switch_to.default_content()
 
     try:
-        logging.debug("Try to find the Cloudflare 'Verify you are human' button...")
+        logging.info("Try to find the Cloudflare 'Verify you are human' button...")
         button = driver.find_element(
             by=By.XPATH,
             value="//input[@type='button' and @value='Verify you are human']",
@@ -229,7 +237,7 @@ def click_verify(driver: WebDriver):
             actions.perform()
             logging.debug("The Cloudflare 'Verify you are human' button found and clicked!")
     except Exception:
-        logging.debug("The Cloudflare 'Verify you are human' button not found on the page.")
+        logging.info("The Cloudflare 'Verify you are human' button not found on the page.")
 
     time.sleep(2)
 
