@@ -11,6 +11,7 @@ from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.support.wait import WebDriverWait
 import utils
 import logging
+import time
 
 
 def resolve_bingchat(req: V1RequestBase, driver: WebDriver) -> ChallengeResolutionT:
@@ -72,22 +73,163 @@ def resolve_bingchat(req: V1RequestBase, driver: WebDriver) -> ChallengeResoluti
 
 # By pass the cloudflare turnstile in bing.com
 def bypass_turnstile(driver: WebDriver):
+    from selenium.webdriver.support import expected_conditions as EC
+    import time
     # Log that we are bypassing the turnstile
     logging.info('Bypassing the turnstile...')
 
-    # Execute the JavaScript code snippet to monitor the cib-message element for the desired content attribute
-    js_code = """
-    const observer = new MutationObserver((mutationsList) => {
-      const hasCaptchaContent = mutationsList.some((mutation) => {
-        const { target } = mutation;
-        return target.getAttribute('content') === 'captcha';
-      });
+    # get the url, wait for the url to contain 'rdr=1&rdrig='
+    WebDriverWait(driver, 10).until(
+        EC.url_contains('rdr=1&rdrig=')
+    )
+    logging.info('rdr=1&rdrig= appeared!')
 
-      if (hasCaptchaContent) {
-        alert('Captcha content appeared!');
-      }
-    });
+    # get the url, wait for the url to contain 'rdr=1&rdrig=' twice
+    WebDriverWait(driver, 10).until(
+        EC.url_contains('rdr=1&rdrig=')
+    )
+    logging.info('rdr=1&rdrig= appeared!')
 
-    observer.observe(document.body, { childList: true, subtree: true });
-    """
-    driver.execute_script(js_code)
+    # wait for the page
+    if utils.get_config_log_html():
+        logging.debug(f"Response HTML:\n{driver.page_source}")
+    html_element = driver.find_element(By.TAG_NAME, "html")
+    page_title = driver.title
+    logging.info(f"Page title: {page_title}")
+
+    # wait for the element 'b_sydConvCont' to appear
+    WebDriverWait(driver, 10).until(
+        EC.presence_of_element_located((By.ID, "b_sydConvCont"))
+    )
+    logging.info('b_sydConvCont appeared!')
+
+    driver.execute_script("""
+function waitForShadowRoot() {
+  const button = document.querySelector("#b_sydConvCont > cib-serp");
+  try {
+    const shadowRoot1 = button.shadowRoot;
+    const shadowRoot2 = shadowRoot1.querySelector("#cib-conversation-main").shadowRoot;
+    const shadowRoot3 = shadowRoot2.querySelector("#cib-chat-main > cib-welcome-container").shadowRoot;
+    const shadowRoot4 = shadowRoot3.querySelector("div.container-items > cib-welcome-item:nth-child(3)").shadowRoot;
+    const targetButton = shadowRoot4.querySelector("button");
+    // Perform actions on the target button
+    targetButton.click();
+  } catch (error) {
+    setTimeout(waitForShadowRoot, 100); // Check again after 100 milliseconds
+  }
+}
+waitForShadowRoot();
+    """)
+    logging.info('Clicked the button')
+
+#     driver.set_script_timeout(30*60)  # 30 minutes
+#     button_clicked = driver.execute_async_script("""
+# function waitForButtonClick() {
+#   return new Promise((resolve) => {
+#     function checkButtonClick() {
+#       try {
+#         const button = document.querySelector("#b_sydConvCont > cib-serp")
+#           .shadowRoot.querySelector("#cib-conversation-main")
+#           .shadowRoot.querySelector("#cib-chat-main > cib-welcome-container")
+#           .shadowRoot.querySelector("div.container-items > cib-welcome-item:nth-child(3)")
+#           .shadowRoot.querySelector("button");
+#         button.addEventListener('click', () => {
+#           resolve(true); // Resolve the promise with true once the button is clicked
+#         });
+#       } catch (error) {
+#         setTimeout(checkButtonClick, 100); // Check again after 100 milliseconds if the button is not found
+#       }
+#     }
+#     checkButtonClick();
+#   });
+# }
+# await waitForButtonClick();
+# return true;
+#     """)
+#
+#     logging.info(f"Button clicked: {button_clicked}")
+
+    # now wait for the iframe to appear
+#     driver.execute_script("""
+# function waitForIFrame() {
+#   try {
+#     const iframe = document.querySelector("#b_sydConvCont > cib-serp")
+#       .shadowRoot.querySelector("#cib-conversation-main")
+#       .shadowRoot.querySelector("#cib-chat-main > cib-chat-turn")
+#       .shadowRoot.querySelector("cib-message-group.response-message-group")
+#       .shadowRoot.querySelector("cib-message")
+#       .shadowRoot.querySelector("iframe");
+#     const iframeDocument = iframe.contentDocument;
+#     const turnstile_widget = iframeDocument.querySelector("#turnstile-widget");
+#     // get the iframe inside turnstile_widget
+#     const iframe2 = turnstile_widget.querySelector("iframe");
+#     const iframe2Root = iframe2.getRootNode();
+#     const iframe2Clickable = iframe2Root.querySelector("#challenge-stage > div > label > map > area");
+#
+#   } catch (error) {
+#     setTimeout(waitForIFrame, 100); // Check again after 100 milliseconds
+#   }
+# }
+# waitForIFrame();
+#     """)
+
+    # wait for the page
+    if utils.get_config_log_html():
+        logging.debug(f"Response HTML:\n{driver.page_source}")
+    html_element = driver.find_element(By.TAG_NAME, "html")
+    page_title = driver.title
+    logging.info(f"Page title: {page_title}")
+
+    click_verify(driver)
+
+    # alert the user that the turnstile appeared
+    logging.info('Turnstile appeared!')
+
+
+def click_verify(driver: WebDriver):
+    try:
+        logging.debug("Try to find the Cloudflare verify checkbox...")
+        iframe = driver.find_element(By.XPATH, "//iframe[@class='captcha-frame']")
+        # check if the iframe is not present
+        if iframe is None:
+            logging.debug("Cloudflare verify iframe not found on the page.")
+            return
+        driver.switch_to.frame(iframe)
+        iframe = driver.find_element(By.XPATH, "//iframe[@title='Widget containing a Cloudflare security challenge']")
+        # check if the iframe is not present
+        if iframe is None:
+            logging.debug("Cloudflare verify iframe Widget not found on the page.")
+            return
+        driver.switch_to.frame(iframe)
+        checkbox = driver.find_element(
+            by=By.XPATH,
+            value='//*[@id="challenge-stage"]/div/label/map/img',
+        )
+        if checkbox:
+            actions = ActionChains(driver)
+            actions.move_to_element_with_offset(checkbox, 5, 7)
+            actions.click(checkbox)
+            actions.perform()
+            logging.debug("Cloudflare verify checkbox found and clicked!")
+    except Exception:
+        logging.debug("Cloudflare verify checkbox not found on the page.")
+    finally:
+        driver.switch_to.default_content()
+
+    try:
+        logging.debug("Try to find the Cloudflare 'Verify you are human' button...")
+        button = driver.find_element(
+            by=By.XPATH,
+            value="//input[@type='button' and @value='Verify you are human']",
+        )
+        if button:
+            actions = ActionChains(driver)
+            actions.move_to_element_with_offset(button, 5, 7)
+            actions.click(button)
+            actions.perform()
+            logging.debug("The Cloudflare 'Verify you are human' button found and clicked!")
+    except Exception:
+        logging.debug("The Cloudflare 'Verify you are human' button not found on the page.")
+
+    time.sleep(2)
+
