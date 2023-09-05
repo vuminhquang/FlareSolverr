@@ -78,24 +78,24 @@ def bypass_turnstile(driver: WebDriver):
     # Log that we are bypassing the turnstile
     logging.info('Bypassing the turnstile...')
 
-    # get the url, wait for the url to contain 'rdr=1&rdrig='
-    WebDriverWait(driver, 10).until(
-        EC.url_contains('rdr=1&rdrig=')
-    )
-    logging.info('rdr=1&rdrig= appeared!')
-
-    # get the url, wait for the url to contain 'rdr=1&rdrig=' twice
-    WebDriverWait(driver, 10).until(
-        EC.url_contains('rdr=1&rdrig=')
-    )
-    logging.info('rdr=1&rdrig= appeared!')
-
-    # wait for the page
-    if utils.get_config_log_html():
-        logging.debug(f"Response HTML:\n{driver.page_source}")
-    html_element = driver.find_element(By.TAG_NAME, "html")
-    page_title = driver.title
-    logging.info(f"Page title: {page_title}")
+    # # get the url, wait for the url to contain 'rdr=1&rdrig='
+    # WebDriverWait(driver, 10).until(
+    #     EC.url_contains('rdr=1&rdrig=')
+    # )
+    # logging.info('rdr=1&rdrig= appeared!')
+    #
+    # # get the url, wait for the url to contain 'rdr=1&rdrig=' twice
+    # WebDriverWait(driver, 10).until(
+    #     EC.url_contains('rdr=1&rdrig=')
+    # )
+    # logging.info('rdr=1&rdrig= appeared!')
+    #
+    # # wait for the page
+    # if utils.get_config_log_html():
+    #     logging.debug(f"Response HTML:\n{driver.page_source}")
+    # html_element = driver.find_element(By.TAG_NAME, "html")
+    # page_title = driver.title
+    # logging.info(f"Page title: {page_title}")
 
     # wait for the element 'b_sydConvCont' to appear
     WebDriverWait(driver, 10).until(
@@ -189,15 +189,24 @@ waitForShadowRoot();
 def click_verify(driver: WebDriver):
     try:
         logging.info("Try to find the Cloudflare verify checkbox...")
-        WebDriverWait(driver, 10 * 60).until(
-            presence_of_element_located((By.XPATH, '//*[@id="cib-chat-main"]/cib-chat-turn//cib-message-group[2]//cib-message//iframe'))
-        )
-        iframe = driver.find_element(By.XPATH, "//iframe[@class='captcha-frame']")
+        # sleep for 10 seconds
+        time.sleep(10)
+        from selenium.webdriver.support import expected_conditions as EC
+        element = WebDriverWait(driver, 10*60).until(EC.presence_of_element_located((By.CSS_SELECTOR, '#b_sydConvCont > cib-serp')))
+
+        # Get the iframe element
+        iframe_element = driver.execute_script(
+            'return arguments[0].shadowRoot.querySelector("#cib-conversation-main").shadowRoot.querySelector("#cib-chat-main > cib-chat-turn").shadowRoot.querySelector("cib-message-group.response-message-group").shadowRoot.querySelector("cib-message").shadowRoot.querySelector("iframe")',
+            element)
+        if iframe_element:
+            logging.info("Cloudflare verify iframe found!")
+        # iframe = driver.find_element(By.XPATH, "//iframe[@class='captcha-frame']")
+        driver.switch_to.frame(iframe_element)
         # check if the iframe is not present
-        if iframe is None:
+        if iframe_element is None:
             logging.info("Cloudflare verify iframe not found on the page.")
             return
-        driver.switch_to.frame(iframe)
+        # driver.switch_to.frame(iframe)
         iframe = driver.find_element(By.XPATH, "//iframe[@title='Widget containing a Cloudflare security challenge']")
         # check if the iframe is not present
         if iframe is None:
