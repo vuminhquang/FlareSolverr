@@ -33,17 +33,8 @@ def resolve_bingchat(req: V1RequestBase, driver: WebDriver) -> ChallengeResoluti
         for cookie in req.cookies:
             driver.delete_cookie(cookie['name'])
             driver.add_cookie(cookie)
-        # reload the page
-        driver.get(req.url)
-        driver.start_session()  # required to bypass Cloudflare
-    else:
-        driver.start_session()
 
-    # wait for the page
-    if utils.get_config_log_html():
-        logging.info(f"Response HTML:\n{driver.page_source}")
-    html_element = driver.find_element(By.TAG_NAME, "html")
-    page_title = driver.title
+    driver.start_session({})  # required to bypass Cloudflare
 
     # Execute JavaScript code to retrieve conversation ID
     script = """
@@ -78,24 +69,16 @@ def bypass_turnstile(driver: WebDriver):
     # Log that we are bypassing the turnstile
     logging.info('Bypassing the turnstile...')
 
-    # # get the url, wait for the url to contain 'rdr=1&rdrig='
-    # WebDriverWait(driver, 10).until(
-    #     EC.url_contains('rdr=1&rdrig=')
-    # )
-    # logging.info('rdr=1&rdrig= appeared!')
-    #
-    # # get the url, wait for the url to contain 'rdr=1&rdrig=' twice
-    # WebDriverWait(driver, 10).until(
-    #     EC.url_contains('rdr=1&rdrig=')
-    # )
-    # logging.info('rdr=1&rdrig= appeared!')
-    #
-    # # wait for the page
-    # if utils.get_config_log_html():
-    #     logging.debug(f"Response HTML:\n{driver.page_source}")
-    # html_element = driver.find_element(By.TAG_NAME, "html")
-    # page_title = driver.title
-    # logging.info(f"Page title: {page_title}")
+    url = driver.current_url
+    time.sleep(2)
+    driver.get("https://bing.com")
+
+    # wait for the chat button on bing
+    WebDriverWait(driver, 10).until(
+        presence_of_element_located((By.CSS_SELECTOR, "#codex > a"))
+    )
+    # click on the element
+    driver.find_element(By.CSS_SELECTOR, "#codex > a").click()
 
     # wait for the element 'b_sydConvCont' to appear
     WebDriverWait(driver, 10).until(
