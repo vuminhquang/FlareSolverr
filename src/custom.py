@@ -73,15 +73,15 @@ def bypass_turnstile(driver: WebDriver):
     time.sleep(2)
     driver.get("https://bing.com")
 
-    # wait for the chat button on bing
-    WebDriverWait(driver, 10).until(
+    # wait for the chat button on bing, no timeout
+    WebDriverWait(driver, 10*60).until(
         presence_of_element_located((By.CSS_SELECTOR, "#codex > a"))
     )
     # click on the element
     driver.find_element(By.CSS_SELECTOR, "#codex > a").click()
 
     # wait for the element 'b_sydConvCont' to appear
-    WebDriverWait(driver, 10).until(
+    WebDriverWait(driver, 10*60).until(
         EC.presence_of_element_located((By.ID, "b_sydConvCont"))
     )
     logging.info('b_sydConvCont appeared!')
