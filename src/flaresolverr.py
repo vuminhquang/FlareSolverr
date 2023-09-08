@@ -119,4 +119,11 @@ if __name__ == "__main__":
         def run(self, handler):
             from waitress import serve
             serve(handler, host=self.host, port=self.port, asyncore_use_poll=True)
-    run(app, host=server_host, port=server_port, quiet=True, server=WaitressServerPoll)
+
+    # if on Windows, else start a virtual display
+    if os.name == 'nt':
+        run(app, host=server_host, port=server_port, quiet=True, server=WaitressServerPoll)
+    else:
+        from pyvirtualdisplay import Display
+        with Display(visible=False) as disp:
+            run(app, host=server_host, port=server_port, quiet=True, server=WaitressServerPoll)

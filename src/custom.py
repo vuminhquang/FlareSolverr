@@ -181,14 +181,15 @@ def click_verify(driver: WebDriver):
         iframe_element = driver.execute_script(
             'return arguments[0].shadowRoot.querySelector("#cib-conversation-main").shadowRoot.querySelector("#cib-chat-main > cib-chat-turn").shadowRoot.querySelector("cib-message-group.response-message-group").shadowRoot.querySelector("cib-message").shadowRoot.querySelector("iframe")',
             element)
-        if iframe_element:
-            logging.info("Cloudflare verify iframe found!")
-        # iframe = driver.find_element(By.XPATH, "//iframe[@class='captcha-frame']")
-        driver.switch_to.frame(iframe_element)
         # check if the iframe is not present
         if iframe_element is None:
             logging.info("Cloudflare verify iframe not found on the page.")
             return
+
+        if iframe_element:
+            logging.info("Cloudflare verify iframe found!")
+
+        driver.switch_to.frame(iframe_element)
         # driver.switch_to.frame(iframe)
         iframe = driver.find_element(By.XPATH, "//iframe[@title='Widget containing a Cloudflare security challenge']")
         # check if the iframe is not present
