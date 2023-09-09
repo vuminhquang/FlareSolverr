@@ -330,3 +330,8 @@ def set_user_agent(driver, user_agent):
         return ua
     except Exception as e:
         raise Exception("Error getting browser User-Agent. " + str(e))
+
+
+# decode html url string
+def decode(url):
+    return urllib.parse.unquote(url)

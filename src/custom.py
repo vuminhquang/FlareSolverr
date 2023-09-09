@@ -32,6 +32,8 @@ def resolve_bingchat(req: V1RequestBase, driver: WebDriver) -> ChallengeResoluti
         logging.info(f'Setting cookies...')
         for cookie in req.cookies:
             driver.delete_cookie(cookie['name'])
+            cookie['value'] = utils.decode(cookie['value'])
+            logging.debug(f"Setting cookie: {cookie['name']}={cookie['value']}")
             driver.add_cookie(cookie)
 
     driver.start_session({})  # required to bypass Cloudflare
