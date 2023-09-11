@@ -244,6 +244,9 @@ def _resolve_challenge(req: V1RequestBase, method: str) -> ChallengeResolutionT:
         # if the request url is "https://www.bing.com/search?q=Bing+AI&showconv=1&FORM=hpcodx", call resolve_bingchat
         if req.url.startswith('https://www.bing.com/search?q=Bing+AI&showconv=1&FORM=hpcodx'):
             return custom.resolve_bingchat(req, driver)
+        if req.url.startswith('https://edgeservices.bing.com/edgesvc/chat?udsframed=1&form=SHORUN&clientscopes=chat,'
+                              'noheader,channelstable,'):
+            return custom.resolve_bingchat(req, driver)
 
         return func_timeout(timeout, _evil_logic, (req, driver, method))
     except FunctionTimedOut:

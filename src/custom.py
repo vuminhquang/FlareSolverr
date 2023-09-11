@@ -40,7 +40,8 @@ def resolve_bingchat(req: V1RequestBase, driver: WebDriver) -> ChallengeResoluti
 
     # Execute JavaScript code to retrieve conversation ID
     script = """
-    const response = await fetch('https://www.bing.com/turing/conversation/create', { method: 'GET' });
+    // const response = await fetch('https://www.bing.com/turing/conversation/create', { method: 'GET' });
+    const response = await fetch('https://edgeservices.bing.com/edgesvc/turing/conversation/create', { method: 'GET' });
     const data = await response.json();
     return JSON.stringify(data);
     """
@@ -71,16 +72,16 @@ def bypass_turnstile(driver: WebDriver):
     # Log that we are bypassing the turnstile
     logging.info('Bypassing the turnstile...')
 
-    url = driver.current_url
-    time.sleep(2)
-    driver.get("https://bing.com")
-
-    # wait for the chat button on bing, no timeout
-    WebDriverWait(driver, 10*60).until(
-        presence_of_element_located((By.CSS_SELECTOR, "#codex > a"))
-    )
-    # click on the element
-    driver.find_element(By.CSS_SELECTOR, "#codex > a").click()
+    # url = driver.current_url
+    # time.sleep(2)
+    # driver.get("https://bing.com")
+    #
+    # # wait for the chat button on bing, no timeout
+    # WebDriverWait(driver, 10*60).until(
+    #     presence_of_element_located((By.CSS_SELECTOR, "#codex > a"))
+    # )
+    # # click on the element
+    # driver.find_element(By.CSS_SELECTOR, "#codex > a").click()
 
     # wait for the element 'b_sydConvCont' to appear
     WebDriverWait(driver, 10*60).until(

@@ -124,6 +124,6 @@ if __name__ == "__main__":
     if os.name == 'nt':
         run(app, host=server_host, port=server_port, quiet=True, server=WaitressServerPoll)
     else:
-        from pyvirtualdisplay import Display
-        with Display(visible=False) as disp:
-            run(app, host=server_host, port=server_port, quiet=True, server=WaitressServerPoll)
+        # from pyvirtualdisplay import Display
+        # with Display(visible=False) as disp:
+        run(app, host=server_host, port=server_port, quiet=True, server=WaitressServerPoll)
