@@ -1,5 +1,13 @@
 # Changelog
 
+## v3.3.5 (2023/09/15)
+
+* Update checkbox selector, again
+
+## v3.3.5 (2023/09/13)
+
+* Change checkbox selector, support languages other than English
+
 ## v3.3.4 (2023/09/02)
 
 * Update checkbox selector
