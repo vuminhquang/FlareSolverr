@@ -113,7 +113,7 @@ def create_proxy_extension(proxy: dict) -> str:
 
 
 def get_webdriver(proxy: dict = None) -> WebDriver:
-    global PATCHED_DRIVER_PATH
+    global PATCHED_DRIVER_PATH, USER_AGENT
     logging.debug('Launching web browser...')
 
     # undetected_chromedriver
@@ -135,6 +135,14 @@ def get_webdriver(proxy: dict = None) -> WebDriver:
     # https://github.com/microsoft/vscode/issues/127800#issuecomment-873342069
     # https://peter.sh/experiments/chromium-command-line-switches/#use-gl
     options.add_argument('--use-gl=swiftshader')
+
+    language = os.environ.get('LANG', None)
+    if language is not None:
+        options.add_argument('--lang=%s' % language)
+
+    # Fix for Chrome 117 | https://github.com/FlareSolverr/FlareSolverr/issues/910
+    if USER_AGENT is not None:
+        options.add_argument('--user-agent=%s' % USER_AGENT)
 
     proxy_extension_dir = None
     if proxy and all(key in proxy for key in ['url', 'username', 'password']):
@@ -162,10 +170,6 @@ def get_webdriver(proxy: dict = None) -> WebDriver:
         driver_exe_path = "/app/chromedriver"
     else:
         version_main = get_chrome_major_version()
-        # Fix for Chrome 115
-        # https://github.com/seleniumbase/SeleniumBase/pull/1967
-        if int(version_main) > 114:
-            version_main = 114
         if PATCHED_DRIVER_PATH is not None:
             driver_exe_path = PATCHED_DRIVER_PATH
 
@@ -295,6 +299,8 @@ def get_user_agent(driver=None) -> str:
         if driver is None:
             driver = get_webdriver()
         USER_AGENT = driver.execute_script("return navigator.userAgent")
+        # Fix for Chrome 117 | https://github.com/FlareSolverr/FlareSolverr/issues/910
+        USER_AGENT = re.sub('HEADLESS', '', USER_AGENT, flags=re.IGNORECASE)
         return USER_AGENT
     except Exception as e:
         raise Exception("Error getting browser User-Agent. " + str(e))

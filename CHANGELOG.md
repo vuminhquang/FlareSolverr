@@ -1,6 +1,24 @@
 # Changelog
 
-## v3.3.5 (2023/09/15)
+## v3.3.10 (2023/11/14)
+
+* Add LANG ENV - resolves issues with YGGtorrent
+
+## v3.3.9 (2023/11/13)
+
+* Fix for Docker build, capture TypeError
+
+## v3.3.8 (2023/11/13)
+
+* Fix headless=true for Chrome 117+. Thanks @NabiKAZ
+* Support running Chrome 119 from source. Thanks @koleg and @Chris7X
+* Fix "OSError: [WinError 6] The handle is invalid" on exit. Thanks @enesgorkemgenc
+
+## v3.3.7 (2023/11/05)
+
+* Bump to rebuild. Thanks @JoachimDorchies
+
+## v3.3.6 (2023/09/15)
 
 * Update checkbox selector, again
 
